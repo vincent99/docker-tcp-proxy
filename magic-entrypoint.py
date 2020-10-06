@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import logging
-import os 
+import os
 import random
 import sys
 import subprocess, threading, signal
@@ -91,5 +91,5 @@ with open("/usr/local/etc/haproxy/haproxy.cfg", "w") as cfg:
     cfg.write(config)
 
 logging.info("Magic ready, executing now: %s", " ".join(sys.argv[1:]))
-Command(' '.join(sys.argv[1:])).run(timeout=os.environ.get('PROXY_TIMEOUT', 28800))
+Command(' '.join(sys.argv[1:])).run(timeout=int(os.environ.get('PROXY_TIMEOUT', '28800')))
 

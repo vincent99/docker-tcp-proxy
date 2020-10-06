@@ -1,19 +1,20 @@
 #!/usr/bin/env python3
 
 import logging
-import os
+import os 
 import random
 import sys
+import subprocess, threading, signal
 
 from dns.resolver import Resolver
 
 logging.root.setLevel(logging.INFO)
 
-LISTENS = os.environ["LISTEN"].split()
-NAMESERVERS = os.environ["NAMESERVERS"].split()
+LISTENS = os.environ.get("LISTEN", ":100").split()
+NAMESERVERS = os.environ.get("NAMESERVERS", "208.67.222.222 8.8.8.8 208.67.220.220 8.8.4.4").split()
 resolver = Resolver()
 resolver.nameservers = NAMESERVERS
-TALKS = os.environ["TALK"].split()
+TALKS = os.environ.get("TALK", "talk:100").split()
 TEMPLATE = """
 backend talk_{index}
     server stupid_{index} {talk}
@@ -37,13 +38,31 @@ defaults
     timeout tunnel "$TIMEOUT_TUNNEL"
 """
 
+class Command(object):
+    def __init__(self, cmd):
+        self.cmd = cmd
+        self.process = None
+
+    def run(self, timeout):
+        def target():
+            self.process = subprocess.Popen(self.cmd, shell=True, preexec_fn=os.setsid)
+            self.process.communicate()
+
+        thread = threading.Thread(target=target)
+        thread.start()
+
+        thread.join(timeout)
+        if thread.is_alive():
+            os.killpg(self.process.pid, signal.SIGTERM)
+            thread.join()
+
 if len(LISTENS) != len(TALKS):
     sys.exit("Set the same amount of servers in $LISTEN and $TALK")
 
-if os.environ["PRE_RESOLVE"] in {"0", "1"}:
-    PRE_RESOLVES = [os.environ["PRE_RESOLVE"]] * len(LISTENS)
+if os.environ.get("PRE_RESOLVE", "0") in {"0", "1"}:
+    PRE_RESOLVES = [os.environ.get("PRE_RESOLVE", "0")] * len(LISTENS)
 else:
-    PRE_RESOLVES = os.environ["PRE_RESOLVE"].split()
+    PRE_RESOLVES = os.environ.get("PRE_RESOLVE", "0").split()
 
 if len(LISTENS) != len(PRE_RESOLVES):
     sys.exit("Set the same amount of bools $PRE_RESOLVE as servers in "
@@ -72,4 +91,5 @@ with open("/usr/local/etc/haproxy/haproxy.cfg", "w") as cfg:
     cfg.write(config)
 
 logging.info("Magic ready, executing now: %s", " ".join(sys.argv[1:]))
-os.execv(sys.argv[1], sys.argv[1:])
+Command(' '.join(sys.argv[1:])).run(timeout=os.environ.get('PROXY_TIMEOUT', 28800))
+

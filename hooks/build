@@ -1,7 +1,0 @@
-#!/bin/bash
-set -ex
-
-docker build \
-    --build-arg VCS_REF="$GIT_SHA1" \
-    --build-arg BUILD_DATE="$(date --rfc-3339 ns)" \
-    --tag "$IMAGE_NAME" .

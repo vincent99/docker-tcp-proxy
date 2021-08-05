@@ -31,6 +31,10 @@ defaults
     log global
     mode tcp
     balance leastconn
+    retries 3
+    option tcpka
+    option clitcpka
+    option srvtcpka
     timeout client "$TIMEOUT_CLIENT"
     timeout client-fin "$TIMEOUT_CLIENT_FIN"
     timeout connect "$TIMEOUT_CONNECT"

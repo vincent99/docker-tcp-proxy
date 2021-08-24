@@ -1,6 +1,6 @@
-FROM haproxy:1.9-alpine
-
-ENTRYPOINT ["/magic-entrypoint", "/docker-entrypoint.sh"]
+FROM haproxy:alpine
+USER root
+ENTRYPOINT ["/magic-entrypoint", "/usr/local/bin/docker-entrypoint.sh"]
 CMD ["haproxy", "-f", "/usr/local/etc/haproxy/haproxy.cfg"]
 
 RUN apk add --no-cache python3 py3-pip &&\
